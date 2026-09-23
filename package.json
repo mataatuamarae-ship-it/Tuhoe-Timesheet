@@ -49,8 +49,7 @@
             "x64"
           ]
         }
-      ],
-      "artifactName": "${productName}-${version}-${target}.${ext}"
+      ]
     },
     "portable": {
       "artifactName": "${productName}-Portable.${ext}"
