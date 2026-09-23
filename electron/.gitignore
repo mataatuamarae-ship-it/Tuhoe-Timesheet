@@ -1,0 +1,4 @@
+node_modules/
+release/
+timesheet-data.json
+*.tmp

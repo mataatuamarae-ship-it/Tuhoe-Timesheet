@@ -1,0 +1,64 @@
+{
+  "name": "tuhoe-timesheet",
+  "productName": "Tuhoe Timesheet",
+  "version": "1.0.0",
+  "description": "Portable offline timesheet app for Tuhoe Tuawhenua Trust submissions",
+  "main": "main.js",
+  "author": "Jim",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable zip nsis"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "nz.manawahoney.tuhoetimesheet",
+    "productName": "Tuhoe Timesheet",
+    "publish": null,
+    "files": [
+      "main.js",
+      "preload.js",
+      "app/**/*",
+      "icon.ico"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "icon": "icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${target}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable.${ext}"
+    },
+    "nsis": {
+      "artifactName": "${productName}-Setup.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
