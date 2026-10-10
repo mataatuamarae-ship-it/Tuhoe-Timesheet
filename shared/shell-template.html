@@ -1,0 +1,469 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Tuhoe Timesheet</title>
+<style>
+  /*{{FONT_CSS}}*/
+  :root {
+    --ground: #FBF6EC;
+    --surface: #FFFFFF;
+    --surface-2: #F3EBD8;
+    --ink: #2B2013;
+    --ink-soft: #5B4B34;
+    --muted: #8C7B5C;
+    --line: #E3D5B4;
+    --line-strong: #D2BE93;
+    --accent: #B87F22;
+    --accent-deep: #8A5A16;
+    --accent-ink: #FFFFFF;
+    --forest: #3F5C43;
+    --forest-soft: #E8EFE7;
+    --danger: #A2432E;
+    --danger-soft: #F3DFD6;
+    --shadow: 0 1px 2px rgba(43,32,19,0.06), 0 8px 24px -12px rgba(43,32,19,0.18);
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #1B1710;
+      --surface: #241F16;
+      --surface-2: #2C261A;
+      --ink: #F3EAD6;
+      --ink-soft: #D8C9A9;
+      --muted: #A69572;
+      --line: #3B331F;
+      --line-strong: #4C4327;
+      --accent: #D6A24B;
+      --accent-deep: #E8B863;
+      --accent-ink: #221805;
+      --forest: #8FB694;
+      --forest-soft: #26301F;
+      --danger: #D98A72;
+      --danger-soft: #3B241D;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #1B1710;
+    --surface: #241F16;
+    --surface-2: #2C261A;
+    --ink: #F3EAD6;
+    --ink-soft: #D8C9A9;
+    --muted: #A69572;
+    --line: #3B331F;
+    --line-strong: #4C4327;
+    --accent: #D6A24B;
+    --accent-deep: #E8B863;
+    --accent-ink: #221805;
+    --forest: #8FB694;
+    --forest-soft: #26301F;
+    --danger: #D98A72;
+    --danger-soft: #3B241D;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: 'Work Sans', system-ui, sans-serif;
+    padding-inline: 20px;
+    padding-block: 28px 48px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; margin: 0; text-wrap: balance; }
+
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent-deep);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  header.page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  header.page-head h1 { font-size: clamp(26px, 4vw, 36px); font-weight: 600; color: var(--ink); }
+  .save-pill {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    padding-bottom: 4px;
+  }
+  .save-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--line-strong);
+    transition: background 0.2s ease;
+  }
+  .save-dot.saving { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+  .save-dot.saved { background: var(--forest); }
+  @keyframes pulse { 50% { opacity: 0.4; } }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 14px; min-width: 128px;
+  }
+  .stat .label { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .stat .value { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  .layout { display: grid; grid-template-columns: 240px 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+  .panel-pad { padding: 14px; }
+
+  .sidebar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .sidebar-head h2 { font-size: 14px; }
+  .icon-btn {
+    background: var(--surface-2); color: var(--accent-deep); border: none; border-radius: 8px;
+    width: 26px; height: 26px; font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .icon-btn:hover { background: var(--line); }
+
+  .period-list { display: flex; flex-direction: column; gap: 5px; }
+  @media (max-width: 780px) {
+    .period-list { flex-direction: row; overflow-x: auto; padding-bottom: 4px; }
+    .period-item { min-width: 168px; flex: 0 0 auto; }
+  }
+  .period-item {
+    border: 1px solid transparent; border-radius: 10px; padding: 8px 10px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .period-item:hover { background: var(--surface-2); }
+  .period-item.active { background: var(--surface-2); border-color: var(--line-strong); }
+  .period-item .p-job { font-size: 11px; color: var(--accent-deep); font-weight: 600; letter-spacing: .02em; }
+  .period-item .p-dates { font-weight: 600; font-size: 13px; }
+  .period-item .p-meta { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+
+  .card { margin: 0; }
+
+  .field-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 140px; }
+  .field.grow { flex: 1; min-width: 180px; }
+  label.field-label {
+    font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+  }
+  input, select {
+    font-family: inherit; font-size: 14px; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line-strong);
+    border-radius: 8px; padding: 8px 10px; width: 100%;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .toolbar {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+    padding: 14px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line);
+  }
+  .btn {
+    font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    border-radius: 8px; padding: 9px 14px; border: 1px solid transparent;
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { background: var(--accent-deep); }
+  .btn-ghost { background: transparent; border-color: var(--line-strong); color: var(--ink-soft); }
+  .btn-ghost:hover { background: var(--surface); }
+  .btn-danger { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+  .btn-icon {
+    background: transparent; border: none; color: var(--muted); cursor: pointer;
+    font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 6px;
+  }
+  .btn-icon:hover { color: var(--danger); background: var(--forest-soft); }
+
+  .table-wrap { overflow-x: auto; }
+  table.sheet { width: 100%; border-collapse: collapse; min-width: 720px; }
+  table.sheet thead th {
+    text-align: left; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; padding: 10px 12px;
+    border-bottom: 1px solid var(--line-strong); background: var(--surface-2);
+    position: sticky; top: 0;
+  }
+  table.sheet td {
+    padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle;
+  }
+  table.sheet tbody tr:hover { background: var(--surface-2); }
+  td.col-date { width: 128px; }
+  td.col-activity { min-width: 220px; }
+  td.col-time { width: 118px; }
+  td.col-lunch { width: 110px; }
+  td.col-remove { width: 34px; text-align: center; }
+  .row-hours {
+    font-size: 11px; color: var(--muted); margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .empty-state {
+    padding: 36px 20px; text-align: center; color: var(--muted); font-size: 14px;
+  }
+
+  .signoff {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px 32px;
+    padding: 18px 20px; border-top: 1px dashed var(--line-strong);
+  }
+  .signoff .line { border-bottom: 1px solid var(--line-strong); padding-bottom: 6px; min-height: 20px; }
+  .signoff .signoff-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  footer.actions {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; flex-wrap: wrap; padding: 14px 18px; border-top: 1px solid var(--line);
+  }
+  .totals { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .totals strong { color: var(--ink); font-family: 'Fraunces', serif; font-size: 16px; }
+
+  .main-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: flex-end; padding: 14px 18px 0; }
+  .main-head .title-wrap { display: flex; flex-direction: column; gap: 4px; }
+  .main-head .job-row { display: flex; gap: 8px; align-items: center; }
+  .main-head input.job-input {
+    font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; border: none;
+    background: transparent; padding: 2px 4px; border-radius: 6px; min-width: 140px;
+  }
+  .main-head input.job-input:hover, .main-head input.job-input:focus { background: var(--surface-2); }
+  .main-head .sub { font-size: 12px; color: var(--muted); }
+
+  .name-row { padding: 0 18px; margin-top: 10px; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--ground); padding: 8px 16px; border-radius: 999px; font-size: 13px;
+    opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 30;
+  }
+  .toast.show { opacity: 1; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20;
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal { background: var(--surface); border-radius: 14px; padding: 20px; max-width: 320px; width: 100%; }
+  .modal p { font-size: 14px; margin: 8px 0 16px; color: var(--ink-soft); }
+  .modal .row { display: flex; gap: 8px; justify-content: flex-end; }
+
+  .activity-trigger {
+    width: 100%; text-align: left; font-family: inherit; font-size: 13px; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px;
+    padding: 8px 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .activity-trigger.placeholder { color: var(--muted); }
+  .activity-trigger:hover { background: var(--surface-2); }
+  .activity-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .activity-popover {
+    position: fixed; z-index: 50; width: 250px; max-height: 320px;
+    background: var(--surface); border: 1px solid var(--line-strong); border-radius: 12px;
+    box-shadow: var(--shadow); display: flex; flex-direction: column;
+  }
+  .activity-popover[hidden] { display: none; }
+  .popover-list { overflow-y: auto; padding: 6px; flex: 1; max-height: 210px; }
+  .popover-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 7px;
+    font-size: 13px; cursor: pointer;
+  }
+  .popover-item:hover { background: var(--surface-2); }
+  .popover-item input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+  .popover-add {
+    padding: 8px; border-top: 1px solid var(--line); display: flex; gap: 6px;
+  }
+  .popover-add input { font-size: 13px; padding: 6px 8px; }
+  .popover-actions { padding: 0 8px 8px; display: flex; justify-content: flex-end; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  .manage-modal { max-width: 460px; }
+  .manage-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin: 6px -6px; padding: 0 6px; }
+  .manage-item {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center;
+    padding: 6px 4px; border-radius: 8px;
+  }
+  .manage-item:hover { background: var(--surface-2); }
+  .manage-item input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+  .manage-item input[type="text"] { font-size: 13px; padding: 6px 8px; }
+  .manage-item .manage-default-label { font-size: 10px; color: var(--muted); text-align: center; }
+  .manage-add { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .manage-add input { flex: 1; }
+  .manage-empty { color: var(--muted); font-size: 13px; padding: 10px 4px; }
+
+  @media (max-width: 520px) {
+    .signoff { grid-template-columns: 1fr; }
+    header.page-head { align-items: flex-start; }
+  }
+
+  .print-only { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    .print-only, .print-only * { visibility: visible; }
+    .print-only { display: block !important; position: absolute; top: 0; left: 0; width: 100%; padding: 0; margin: 0; }
+    @page { size: A4; margin: 14mm; }
+  }
+  .print-sheet { font-family: 'Work Sans', system-ui, sans-serif; color: #2B2013; }
+  .print-sheet .p-title {
+    background: #E6E0D1; border: 1px solid #8C7B5C; text-align: center;
+    font-family: 'Fraunces', Georgia, serif; font-size: 18px; padding: 8px 0; margin-bottom: 0;
+  }
+  .print-sheet .p-name {
+    border: 1px solid #8C7B5C; border-top: none; padding: 6px 10px; font-size: 13px;
+  }
+  .print-sheet .p-name strong { font-weight: 700; margin-right: 8px; }
+  .print-sheet table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+  .print-sheet th, .print-sheet td { border: 1px solid #C8BB9C; padding: 6px 8px; text-align: center; }
+  .print-sheet th { background: #E6E0D1; font-weight: 700; }
+  .print-sheet .p-signoff { display: flex; justify-content: space-between; margin-top: 24px; font-size: 12px; }
+  .print-sheet .p-signoff div + div { margin-top: 14px; }
+</style>
+
+<header class="page-head">
+  <div>
+    <div class="eyebrow">Tuhoe Tuawhenua Trust{{EYEBROW_SUFFIX}}</div>
+    <h1>Timesheet</h1>
+  </div>
+  <div class="save-pill"><span class="save-dot" id="saveDot"></span><span id="saveLabel">Ready</span></div>
+</header>
+
+{{STORAGE_NOTE_BLOCK}}
+<div class="stat-row" id="statRow"></div>
+
+<div class="name-row">
+  <div class="field" style="max-width:260px;">
+    <label class="field-label" for="nameSelect">Name</label>
+    <div style="display:flex; gap:6px;">
+      <select id="nameSelect" style="flex:1;"></select>
+      <button class="icon-btn" id="addNameBtn" type="button" title="Add a name" aria-label="Add a name">+</button>
+    </div>
+    <div id="addNameRow" style="display:none; gap:6px; margin-top:6px;">
+      <input id="addNameInput" type="text" placeholder="New name…" autocomplete="off" style="flex:1;" />
+      <button class="btn btn-primary btn-sm" id="addNameSave">Add</button>
+      <button class="btn btn-ghost btn-sm" id="addNameCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+<div style="height:14px;"></div>
+
+<div class="layout">
+  <div class="panel sidebar">
+    <div class="panel-pad">
+      <div class="sidebar-head">
+        <h2>Periods</h2>
+        <button class="icon-btn" id="newPeriodBtn" title="New period" aria-label="New period">+</button>
+      </div>
+      <div class="period-list" id="periodList"></div>
+    </div>
+  </div>
+
+  <div class="panel main">
+    <div class="main-head">
+      <div class="title-wrap">
+        <div class="job-row">
+          <input class="job-input" id="jobInput" placeholder="Job / batch (optional)" />
+        </div>
+        <div class="sub" id="periodSub">—</div>
+      </div>
+      <button class="btn btn-danger" id="deletePeriodBtn">Delete period</button>
+    </div>
+
+    <div class="toolbar">
+      <div class="field" style="min-width:160px;">
+        <label class="field-label" for="weekStart">Week starting (Mon)</label>
+        <input id="weekStart" type="date" />
+      </div>
+      <button class="btn btn-primary" id="addWeekBtn">+ Add week (Mon–Fri)</button>
+      <button class="btn btn-ghost" id="addDayBtn">+ Add single day</button>
+      <button class="btn btn-ghost" id="manageActivitiesBtn" style="margin-left:auto;">⚙ Manage activities</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="sheet" id="sheetTable">
+        <thead>
+          <tr>
+            <th class="col-date">Date</th>
+            <th class="col-activity">Activity</th>
+            <th class="col-time">Start time</th>
+            <th class="col-time">Finish time</th>
+            <th class="col-lunch">Lunch</th>
+            <th class="col-remove"></th>
+          </tr>
+        </thead>
+        <tbody id="sheetBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" hidden>No entries yet — add a week or a single day to start logging hours.</div>
+    </div>
+
+    <div class="signoff">
+      <div>
+        <div class="line"></div>
+        <div class="signoff-label">Project Manager</div>
+      </div>
+      <div>
+        <div class="line"></div>
+        <div class="signoff-label">Executive Trustee</div>
+      </div>
+      <div>
+        <div class="line"></div>
+        <div class="signoff-label">Hours pay</div>
+      </div>
+      <div>
+        <div class="line"></div>
+        <div class="signoff-label">Hour bank</div>
+      </div>
+    </div>
+
+    <footer class="actions">
+      <div class="totals">Total for period: <strong id="totalHours">0.0 h</strong></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        {{BACKUP_RESTORE_BLOCK}}
+        <button class="btn btn-ghost" id="printBtn">Print</button>
+        <button class="btn btn-primary" id="pdfBtn">Download PDF</button>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<div id="printView" class="print-only"></div>
+
+<div class="modal-backdrop" id="confirmBackdrop" hidden>
+  <div class="modal">
+    <h3 id="confirmTitle">Delete this period?</h3>
+    <p id="confirmBody">This removes all its entries for good.</p>
+    <div class="row">
+      <button class="btn btn-ghost" id="confirmCancel">Cancel</button>
+      <button class="btn btn-danger" id="confirmOk">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="manageBackdrop" hidden>
+  <div class="modal manage-modal">
+    <h3>Manage activities</h3>
+    <p>Tick "Default" for the ones that should pre-fill new rows. Rename or remove any you don't use.</p>
+    <div class="manage-list" id="manageList"></div>
+    <div class="manage-add">
+      <input type="text" id="manageAddInput" placeholder="Add new activity…" />
+      <button class="btn btn-primary btn-sm" id="manageAddBtn">Add</button>
+    </div>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn btn-primary" id="manageCloseBtn">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="activity-popover" id="activityPopover" hidden>
+  <div class="popover-list" id="popoverList"></div>
+  <div class="popover-add">
+    <input type="text" id="popoverAddInput" placeholder="Add new activity…" />
+  </div>
+  <div class="popover-actions">
+    <button class="btn btn-primary btn-sm" id="popoverDone">Done</button>
+  </div>
+</div>
+

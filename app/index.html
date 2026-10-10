@@ -907,7 +907,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   // drive. Opened as a plain HTML file/browser instead, it falls back to localStorage.
   const hasFileStorage = typeof window.timesheetStorage !== "undefined";
   const storage = hasFileStorage
-    ? { load: () => window.timesheetStorage.load(), save: (data) => window.timesheetStorage.save(data) }
+    ? {
+        load: () => window.timesheetStorage.load(),
+        save: (data) => window.timesheetStorage.save(data),
+        registerFlush: (fn) => window.timesheetStorage.onFlushRequest(fn)
+      }
     : localStorageAdapter;
   TuhoeTimesheet.init({
     storage: storage,

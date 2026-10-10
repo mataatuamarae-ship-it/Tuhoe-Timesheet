@@ -557,7 +557,19 @@
     function scheduleSave() {
       if (saveTimer) clearTimeout(saveTimer);
       setSaveStatus("saving");
-      saveTimer = setTimeout(persist, 600);
+      saveTimer = setTimeout(() => { saveTimer = null; persist(); }, 600);
+    }
+
+    // Save right now if an edit is still waiting on the 600ms debounce, and wait
+    // for any save already in flight. Used when the window/tab is closing.
+    async function flushSave() {
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+        await persist();
+      } else if (inflightSave) {
+        try { await inflightSave; } catch (e) { /* persist() already reports failures */ }
+      }
     }
 
     function setSaveStatus(status) {
@@ -599,21 +611,28 @@
       }
     }
 
+    let inflightSave = null;
     async function persist() {
-      try {
-        const data = stateToPlainData();
-        const ok = await storage.save(data);
-        if (!ok) throw new Error("save failed");
-        setSaveStatus("saved");
-      } catch (e) {
-        setSaveStatus("offline");
-      }
+      const run = (async () => {
+        try {
+          const data = stateToPlainData();
+          const ok = await storage.save(data);
+          if (!ok) throw new Error("save failed");
+          setSaveStatus("saved");
+        } catch (e) {
+          setSaveStatus("offline");
+        }
+      })();
+      inflightSave = run;
+      try { await run; } finally { if (inflightSave === run) inflightSave = null; }
     }
 
     async function loadStoredState() {
       try {
         const d = await storage.load();
-        if (!d || !d.periods || !d.periods.length) return false;
+        // Seed only when nothing has ever been saved. A saved file with zero periods
+        // means the user deliberately emptied the timesheet, so keep it empty.
+        if (!d || !Array.isArray(d.periods)) return false;
         applyLoadedData(d);
         renderAll();
         return true;
@@ -862,6 +881,12 @@
         ev.target.value = "";
       });
     }
+
+    // Flush a pending edit when the page is being closed/hidden (best effort in a
+    // browser); the Electron adapter can also register a close handshake.
+    window.addEventListener("pagehide", () => { flushSave(); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushSave(); });
+    if (typeof adapter.registerFlush === "function") adapter.registerFlush(flushSave);
 
     if (adapter.storageNote) {
       const note = document.getElementById("storageNote");
