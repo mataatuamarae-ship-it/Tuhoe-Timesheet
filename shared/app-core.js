@@ -216,6 +216,7 @@
         actBtn.className = "activity-trigger" + (row.activity ? "" : " placeholder");
         actBtn.setAttribute("data-row", row.id);
         actBtn.textContent = row.activity || "Select activity…";
+        actBtn.title = row.activity || "";
         actBtn.addEventListener("click", (ev) => {
           ev.stopPropagation();
           openActivityPicker(row.id, actBtn);
@@ -339,6 +340,7 @@
       const btn = sheetBody.querySelector(`[data-row="${row.id}"]`);
       if (!btn) return;
       btn.textContent = row.activity || "Select activity…";
+      btn.title = row.activity || "";
       btn.classList.toggle("placeholder", !row.activity);
     }
     function openActivityPicker(rowId, btnEl) {

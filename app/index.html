@@ -183,7 +183,7 @@
   .btn-icon:hover { color: var(--danger); background: var(--forest-soft); }
 
   .table-wrap { overflow-x: auto; }
-  table.sheet { width: 100%; border-collapse: collapse; min-width: 720px; }
+  table.sheet { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
   table.sheet thead th {
     text-align: left; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
     color: var(--muted); font-weight: 600; padding: 10px 12px;
@@ -194,11 +194,15 @@
     padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle;
   }
   table.sheet tbody tr:hover { background: var(--surface-2); }
-  td.col-date { width: 128px; }
-  td.col-activity { min-width: 220px; }
-  td.col-time { width: 118px; }
-  td.col-lunch { width: 110px; }
-  td.col-remove { width: 34px; text-align: center; }
+  /* Fixed layout: the Activity column takes whatever space is left and truncates
+     long tag lists (full text shows on hover), so nothing runs off the panel. */
+  .col-date { width: 136px; }
+  .col-activity { width: auto; }
+  .col-time { width: 128px; }
+  .col-lunch { width: 104px; }
+  .col-remove { width: 34px; text-align: center; }
+  table.sheet td input, table.sheet td select { padding: 7px 5px; font-size: 13px; }
+  table.sheet th, table.sheet td { padding-left: 6px; padding-right: 6px; }
   .row-hours {
     font-size: 11px; color: var(--muted); margin-top: 3px;
     font-variant-numeric: tabular-nums;
