@@ -9,21 +9,27 @@ const fs = require("fs");
 // process.execPath points there. electron-builder exposes the folder the .exe
 // really lives in as PORTABLE_EXECUTABLE_DIR (set only by the portable build);
 // the zip and installer builds don't set it and fall back to the exe's folder.
-function getDataFilePath() {
-  const baseDir = app.isPackaged
+const DATA_NAME = "timesheet-data.json";
+
+function primaryDir() {
+  return app.isPackaged
     ? (process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath))
     : __dirname;
-  return path.join(baseDir, "timesheet-data.json");
+}
+// Used only if the folder next to the .exe can't be written to (protected
+// folder, read-only drive, antivirus/"Controlled folder access" blocking it).
+function fallbackDir() {
+  return app.getPath("userData");
 }
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
-// Load order: main file -> .bak (last known-good save) -> nothing (fresh start).
+// Load order within a folder: main file -> .bak (last known-good save) -> nothing.
 // A main file that exists but can't be read is kept aside, never overwritten.
-function loadData() {
-  const file = getDataFilePath();
+function loadFromDir(dir) {
+  const file = path.join(dir, DATA_NAME);
   const bak = file + ".bak";
   try {
     if (!fs.existsSync(file)) return null;
@@ -39,23 +45,74 @@ function loadData() {
   }
 }
 
-function saveData(data) {
+// If data exists in both places (e.g. saved to the fallback while the app
+// folder was blocked, later unblocked), use the most recently saved one.
+function loadData() {
+  const found = [primaryDir(), fallbackDir()]
+    .map(loadFromDir)
+    .filter(Boolean);
+  if (!found.length) return null;
+  found.sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  return found[0];
+}
+
+function sleepMs(ms) {
+  try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); } catch (e) { /* ignore */ }
+}
+
+function writeAtomic(dir, data) {
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, DATA_NAME);
+  const tmp = file + ".tmp";
+  // Keep the previous save as .bak, but only if it is itself valid JSON,
+  // so the .bak is always a good copy.
   try {
-    const file = getDataFilePath();
-    const tmp = file + ".tmp";
-    // Keep the previous save as .bak, but only if it is itself valid JSON,
-    // so the .bak is always a good copy.
-    try {
-      if (fs.existsSync(file)) {
-        readJson(file);
-        fs.copyFileSync(file, file + ".bak");
-      }
-    } catch (e) { /* existing file unreadable: leave the old .bak alone */ }
-    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
-    fs.renameSync(tmp, file); // atomic-ish replace, avoids a half-written file on a crash/power loss
-    return true;
+    if (fs.existsSync(file)) {
+      readJson(file);
+      fs.copyFileSync(file, file + ".bak");
+    }
+  } catch (e) { /* existing file unreadable: leave the old .bak alone */ }
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
+  // Replacing a file can briefly fail on Windows while antivirus/indexing has
+  // the new file open, so retry a few times, then fall back to writing directly.
+  let lastErr = null;
+  for (let i = 0; i < 6; i++) {
+    try { fs.renameSync(tmp, file); return file; }
+    catch (e) { lastErr = e; sleepMs(60 * (i + 1)); }
+  }
+  try {
+    fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+    try { fs.unlinkSync(tmp); } catch (e) { /* ignore */ }
+    return file;
   } catch (e) {
-    return false;
+    throw lastErr || e;
+  }
+}
+
+function describe(e) {
+  return (e && (e.code ? e.code + ": " : "") + (e.message || e)) || "unknown error";
+}
+
+// Returns { ok, path, fellBack?, error? } so the page can say what happened.
+function saveData(data) {
+  let primaryErr = null;
+  try {
+    const file = writeAtomic(primaryDir(), data);
+    return { ok: true, path: file };
+  } catch (e) {
+    primaryErr = e;
+  }
+  try {
+    const file = writeAtomic(fallbackDir(), data);
+    return {
+      ok: true, path: file, fellBack: true,
+      error: "Couldn't write next to the app (" + describe(primaryErr) + ")"
+    };
+  } catch (e2) {
+    return {
+      ok: false, path: path.join(primaryDir(), DATA_NAME),
+      error: describe(primaryErr) + " | fallback: " + describe(e2)
+    };
   }
 }
 

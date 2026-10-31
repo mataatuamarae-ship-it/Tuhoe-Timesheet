@@ -49,6 +49,12 @@ extra safety copy (e.g. if the drive itself ever gets lost or corrupted).
   `timesheet-data.json.bak` beside the data file. If the main file is ever
   damaged, the app sets it aside as `timesheet-data.corrupt-<time>.json` and
   loads the `.bak` instead. Keep these files with the .exe.
+- **If it can't save next to the .exe** (a protected folder, a read-only drive,
+  antivirus or Windows "Controlled folder access" blocking the app), it saves
+  to the app's own data folder instead and shows a note saying where. If it
+  can't save anywhere, the page shows the real reason in red. Use Backup data
+  in the meantime. Next to the .exe is best; try a folder like
+  `C:\Tuhoe Timesheet` or a USB drive if you see the note.
 - **Emptying is respected.** If you delete every period, it stays empty on
   the next start (the migrated history is only loaded the very first time).
 

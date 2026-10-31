@@ -574,6 +574,17 @@
       }
     }
 
+    function showSaveNotice(kind, text) {
+      const el = document.getElementById("saveNotice");
+      if (!el) return;
+      if (!kind) { el.hidden = true; el.textContent = ""; return; }
+      el.hidden = false;
+      el.textContent = text;
+      el.style.background = kind === "error" ? "var(--danger-soft)" : "var(--surface-2)";
+      el.style.color = kind === "error" ? "var(--danger)" : "var(--ink-soft)";
+      el.style.border = "1px solid " + (kind === "error" ? "var(--danger)" : "var(--line-strong)");
+    }
+
     function setSaveStatus(status) {
       saveDot.className = "save-dot" + (status === "saving" ? " saving" : status === "saved" ? " saved" : "");
       saveLabel.textContent = status === "saving" ? "Saving…" : status === "saved" ? "Saved" : status === "offline" ? "Couldn't save" : "Ready";
@@ -618,11 +629,16 @@
       const run = (async () => {
         try {
           const data = stateToPlainData();
-          const ok = await storage.save(data);
-          if (!ok) throw new Error("save failed");
+          const res = await storage.save(data);
+          if (!res) throw new Error("save failed");
           setSaveStatus("saved");
+          // The Electron app reports when it had to save somewhere other than
+          // next to the .exe, so the person knows where their data is.
+          if (res && res.fellBack) showSaveNotice("warn", "Saved, but not next to the app. " + (res.error || "") + " Your data is in: " + (res.path || "the app's data folder") + " (use Backup data to copy it out).");
+          else showSaveNotice(null);
         } catch (e) {
           setSaveStatus("offline");
+          showSaveNotice("error", "Couldn't save your changes: " + ((e && e.message) || "unknown error") + " — use Backup data to keep a copy until this is fixed.");
         }
       })();
       inflightSave = run;
